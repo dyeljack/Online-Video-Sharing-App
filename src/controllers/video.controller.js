@@ -159,7 +159,10 @@ const updateVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400, "atleast 1 field is required")
     }
 
-    const video = await Video.findById(videoId)
+    const video = await Video.findOne({
+        _id: videoId,
+        owner: req.user._id
+    })
 
     if (!video) {
         new ApiError(400, "video not found")
@@ -194,7 +197,10 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400, "videoId not provided")
     }
 
-    const video = await Video.findByIdAndDelete(videoId)
+    const video = await Video.findOneAndDelete({
+        _id: videoId,
+        owner: req.user._id
+    })
 
     res
         .status(200)
@@ -209,7 +215,11 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     if (!videoId.trim()) {
         throw new ApiError(400, "videoId not provided")
     }
-    const video = await Video.findById(videoId)
+    
+      const video = await Video.findOne({
+        _id: videoId,
+        owner: req.user._id
+    })
 
     video.isPublished = !video.isPublished
     await video.save()

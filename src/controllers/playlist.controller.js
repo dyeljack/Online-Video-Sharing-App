@@ -1,15 +1,15 @@
-import mongoose, {isValidObjectId} from "mongoose"
-import {Playlist} from "../models/playlist.model.js"
-import {ApiError} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {asyncHandler} from "../utils/asyncHandler.js"
+import mongoose, { isValidObjectId } from "mongoose"
+import { Playlist } from "../models/playlist.model.js"
+import { ApiError } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
 import { Video } from "../models/video.model.js"
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
-    const {name, description} = req.body
+    const { name, description } = req.body
 
-    if(!(name?.trim() && description?.trim())){
+    if (!(name?.trim() && description?.trim())) {
         throw new ApiError(400, "All fields are required")
     }
 
@@ -21,164 +21,174 @@ const createPlaylist = asyncHandler(async (req, res) => {
     })
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200, playlist, "Playlist created successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, playlist, "Playlist created successfully")
+        )
 })
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-    const {userId} = req.params
+    const { userId } = req.params
 
-    if(!userId){
+    if (!userId) {
         throw new ApiError(400, "userId not provided")
     }
-    
+
     const playlist = await Playlist.find({
         owner: userId
     })
 
-    if(!playlist){
+    if (!playlist) {
         throw new ApiError(404, "no playlists found")
     }
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200, playlist, "user playlists fetched successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, playlist, "user playlists fetched successfully")
+        )
 })
 
 const getPlaylistById = asyncHandler(async (req, res) => {
-    const {playlistId} = req.params
-   
-    if(!playlistId){
+    const { playlistId } = req.params
+
+    if (!playlistId) {
         throw new ApiError(400, "playlistId not provided")
     }
 
     const playlist = await Playlist.findById(playlistId)
 
-    if(!playlist){
+    if (!playlist) {
         throw new ApiError(404, "playlist not found")
     }
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200, playlist, "playlist fetched successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, playlist, "playlist fetched successfully")
+        )
 })
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
-    const {playlistId, videoId} = req.params
+    const { playlistId, videoId } = req.params
 
-    if(!(playlistId.trim() && videoId.trim())){
+    if (!(playlistId.trim() && videoId.trim())) {
         throw new ApiError(400, "All fields are required")
     }
     const video = Video.findById(videoId)
-    if(!video){
+    if (!video) {
         throw new ApiError(404, "invalid videoId")
     }
 
-    const playlist = await Playlist.findByIdAndUpdate(
-        playlistId,
+    const playlist = await Playlist.findOneAndUpdate(
         {
-            $addToSet:{
+            _id: playlistId,
+            owner: req.user._id
+        },
+        {
+            $addToSet: {
                 videos: videoId
             }
         },
-        {new: true}    
+        { new: true }
     )
 
-    if(!playlist){
+    if (!playlist) {
         throw new ApiError(404, "playlist not found")
     }
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200, playlist, "video added to playlist successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, playlist, "video added to playlist successfully")
+        )
 })
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
-    const {playlistId, videoId} = req.params
+    const { playlistId, videoId } = req.params
 
-    if(!(playlistId.trim() && videoId.trim())){
+    if (!(playlistId.trim() && videoId.trim())) {
         throw new ApiError(400, "All fields are required")
     }
     const video = Video.findById(videoId)
-    if(!video){
+    if (!video) {
         throw new ApiError(404, "invalid videoId")
     }
 
-    const playlist = await Playlist.findByIdAndUpdate(
-        playlistId,
+    const playlist = await Playlist.findOneAndUpdate(
         {
-            $pull:{
-                videos: videoId
-            }
-        },
-        {new: true}    
+            _id: playlistId,
+            owner: req.user._id
+        }, {
+        $pull: {
+            videos: videoId
+        }
+    },
+        { new: true }
     )
 
-    if(!playlist){
+    if (!playlist) {
         throw new ApiError(404, "playlist not found")
     }
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200, playlist, "video removed from playlist successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, playlist, "video removed from playlist successfully")
+        )
 
 
 })
 
 const deletePlaylist = asyncHandler(async (req, res) => {
-    const {playlistId} = req.params
-  
-      if(!playlistId.trim()){
+    const { playlistId } = req.params
+
+    if (!playlistId.trim()) {
         throw new ApiError(400, "All fields are required")
     }
 
-    await Playlist.findByIdAndDelete(playlistId)
+    await Playlist.findOneAndDelete({
+        _id: playlistId,
+        owner: req.user._id
+    })
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200, "playlist deleted successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, "playlist deleted successfully")
+        )
 })
 
 const updatePlaylist = asyncHandler(async (req, res) => {
-    const {playlistId} = req.params
-    const {name, description} = req.body
-  
-      if(!playlistId?.trim() || (!name?.trim() && !description?.trim())){
+    const { playlistId } = req.params
+    const { name, description } = req.body
+
+    if (!playlistId?.trim() || (!name?.trim() && !description?.trim())) {
         throw new ApiError(400, "All fields are required")
     }
 
-    const playlist = await Playlist.findByIdAndUpdate(
-        playlistId,
+      const playlist = await Playlist.findOneAndUpdate(
         {
-            $set:{
+            _id: playlistId,
+            owner: req.user._id
+        }, {
+            $set: {
                 name,
                 description
             }
         },
-        {new: true}    
+        { new: true }
     )
 
-    if(!playlist){
+    if (!playlist) {
         throw new ApiError(404, "playlist not found")
     }
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200, playlist, "playlist updated successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, playlist, "playlist updated successfully")
+        )
 })
 
 export {

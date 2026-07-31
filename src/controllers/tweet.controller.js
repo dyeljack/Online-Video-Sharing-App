@@ -60,8 +60,10 @@ const updateTweet = asyncHandler(async (req, res) => {
         throw new ApiError(400, "you can't post an empty tweet")
     }
 
-    const tweet = await Tweet.findByIdAndUpdate(
-        { _id: tweetId },
+    const tweet = await Tweet.findOneAndUpdate(
+        { _id: tweetId,
+          owner: req.user._id
+         },
         {
             $set: {
                 content,
@@ -84,7 +86,10 @@ const deleteTweet = asyncHandler(async (req, res) => {
         throw new ApiError(400, "tweetId is missing")
     }
 
-    await Tweet.findByIdAndDelete(tweetId)
+    await Tweet.findOneAndDelete({
+         _id: tweetId,
+          owner: req.user._id
+    })
 
     res
         .status(200)

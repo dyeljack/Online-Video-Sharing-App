@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { Video } from "../models/video.model.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
-    
+
     const { videoId } = req.params
     const { page = 1, limit = 10 } = req.query
 
@@ -61,28 +61,28 @@ const getVideoComments = asyncHandler(async (req, res) => {
             }
         },
         {
-            $project:{
+            $project: {
                 owner: 1,
                 content: 1
             }
         }
     ])
-       if (!comment?.length) {
+    if (!comment?.length) {
         throw new ApiError(404, "comments do not exists")
     }
 
     res
-    .status(200)
-    .json(
-        new ApiResponse(200,comment, "comments fetched successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, comment, "comments fetched successfully")
+        )
 
 
 
 })
 
 const addComment = asyncHandler(async (req, res) => {
-    
+
     const { videoId } = req.params
     const { content } = req.body
 
@@ -95,7 +95,7 @@ const addComment = asyncHandler(async (req, res) => {
     }
 
     const video = await Video.findById(videoId)
-    if(!video){
+    if (!video) {
         new ApiError(400, "Video does not exist")
     }
 
@@ -124,8 +124,11 @@ const updateComment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "you can't post an empty comment")
     }
 
-    const comment = await Comment.findByIdAndUpdate(
-        { _id: commentId },
+    const comment = await Comment.findOneAndUpdate(
+        {
+            _id: commentId,
+            owner: req.user._id
+        },
         {
             $set: {
                 content,
@@ -148,7 +151,10 @@ const deleteComment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "commentId is missing")
     }
 
-    await Comment.findByIdAndDelete(commentId)
+    await Comment.findOneAndDelete({
+            _id: commentId,
+            owner: req.user._id
+    })
 
     res
         .status(200)

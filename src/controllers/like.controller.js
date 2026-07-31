@@ -106,7 +106,8 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     const videoIds = like.map(like => like.video)
 
     const video = await Video.find({
-        _id: {$in: videoIds}
+        _id: {$in: videoIds},
+        isPublished: true
     }).select("-isPublished")
 
     if (!video) {
